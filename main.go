@@ -12,8 +12,14 @@ func main() {
 		Addr:    ":8080",
 		Handler: serveMux,
 	}
-	serveMux.Handle("/app/", http.StripPrefix("/app", http.FileServer(http.Dir("."))))
 
-	serveMux.HandleFunc("/healthz", handlerReadiness)
+	var apiCfg apiConfig
+
+	//serveMux.Handle("/app/", http.StripPrefix("/app", http.FileServer(http.Dir("."))))
+	serveMux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
+
+	serveMux.HandleFunc("GET /api/healthz", handlerReadiness)
+	serveMux.HandleFunc("GET /admin/metrics", apiCfg.HandlerMetrics)
+	serveMux.HandleFunc("POST /admin/reset", apiCfg.HandlerReset)
 	log.Fatal(serverStruct.ListenAndServe())
 }

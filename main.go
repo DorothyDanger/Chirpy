@@ -21,5 +21,6 @@ func main() {
 	serveMux.HandleFunc("GET /api/healthz", handlerReadiness)
 	serveMux.HandleFunc("GET /admin/metrics", apiCfg.HandlerMetrics)
 	serveMux.HandleFunc("POST /admin/reset", apiCfg.HandlerReset)
+	serveMux.HandleFunc("POST /api/validate_chirp", apiCfg.HandlerValidate)
 	log.Fatal(serverStruct.ListenAndServe())
 }

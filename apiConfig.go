@@ -52,11 +52,19 @@ func (cfg *apiConfig) HandlerValidate(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	type returnValid struct {
-		Valid bool `json:"valid"`
+	// For lesson 4 in JSON: Replace "profane" words with ****
+	// The words are:
+	// kerfuffle
+	// sharbert
+	// fornax
+	// instead of the valid boolean, return the cleaned string in a JSON response.
+
+	cleanedBody := ProfaneReplacement(params.Body)
+	type returnBody struct {
+		CleanedBody string `json:"cleaned_body"`
 	}
-	resp := returnValid{
-		Valid: true,
+	resp := returnBody{
+		CleanedBody: cleanedBody,
 	}
 
 	RespondWithJSON(w, 200, resp)

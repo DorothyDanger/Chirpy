@@ -4,11 +4,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"sync/atomic"
+	"time"
+
+	"github.com/DorothyDanger/Chirpy/internal/database"
+	"github.com/google/uuid"
 )
+
+type User struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Email     string    `json:"email"`
+}
 
 type apiConfig struct {
 	fileserverHits atomic.Int32
+	db             *database.Queries
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
@@ -25,9 +38,14 @@ func (cfg *apiConfig) HandlerMetrics(w http.ResponseWriter, req *http.Request) {
 }
 
 func (cfg *apiConfig) HandlerReset(w http.ResponseWriter, req *http.Request) {
-	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	cfg.fileserverHits.Swap(0)
+	platform := os.Getenv("PLATFORM")
+	if platform != "dev" {
+		RespondWithError(w, 403, "Forbidden")
+	}
+	err := cfg.db.ResetUsers(req.Context())
+	if err != nil {
+		RespondWithError(w, 500, fmt.Sprintf("Error resetting users: %s", err))
+	}
 }
 
 func (cfg *apiConfig) HandlerValidate(w http.ResponseWriter, req *http.Request) {
@@ -68,4 +86,42 @@ func (cfg *apiConfig) HandlerValidate(w http.ResponseWriter, req *http.Request) 
 	}
 
 	RespondWithJSON(w, 200, resp)
+}
+
+func (cfg *apiConfig) HandlerCreateUser(w http.ResponseWriter, req *http.Request) {
+	type parameters struct {
+		Email string `json: "email"`
+	}
+
+	decoder := json.NewDecoder(req.Body)
+	params := parameters{}
+	err := decoder.Decode(&params)
+	if err != nil {
+		RespondWithError(w, 500, fmt.Sprintf("Error decoding parameters: %s", err))
+		return
+	}
+	var finalUser User
+	user, err := cfg.db.CreateUser(req.Context(), params.Email)
+	if err != nil {
+		RespondWithError(w, 500, fmt.Sprintf("Error creating user: %s", err))
+		return
+	}
+	finalUser = User{
+		ID:        user.ID,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+		Email:     user.Email,
+	}
+	RespondWithJSON(w, 201, finalUser)
+}
+
+func (cfg *apiConfig) HandlerDeleteAllUsers(w http.ResponseWriter, req *http.Request) {
+	platform := os.Getenv("PLATFORM")
+	if platform != "dev" {
+		RespondWithError(w, 403, "Forbidden")
+	}
+	err := cfg.db.ResetUsers(req.Context())
+	if err != nil {
+		RespondWithError(w, 500, fmt.Sprintf("Error resetting users: %s", err))
+	}
 }

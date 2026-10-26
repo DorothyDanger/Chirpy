@@ -197,3 +197,23 @@ func (cfg *apiConfig) HandlerGetAllChirps(w http.ResponseWriter, req *http.Reque
 	}
 	RespondWithJSON(w, 200, finalChirps)
 }
+
+func (cfg *apiConfig) HandlerGetChirp(w http.ResponseWriter, req *http.Request) {
+
+	chirp, err := cfg.db.GetChirp(req.Context(), uuid.MustParse(req.PathValue("chirpID")))
+	if err != nil {
+		RespondWithError(w, 404, fmt.Sprintf("Error getting chirp: %s", err))
+		return
+	}
+
+	var finalChirp Chirp
+	finalChirp = Chirp{
+		ID:        chirp.ID,
+		CreatedAt: chirp.CreatedAt,
+		UpdatedAt: chirp.UpdatedAt,
+		Body:      chirp.Body,
+		UserID:    chirp.UserID,
+	}
+
+	RespondWithJSON(w, 200, finalChirp)
+}

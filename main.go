@@ -40,5 +40,6 @@ func main() {
 	serveMux.HandleFunc("POST /api/users", apiCfg.HandlerCreateUser)
 	serveMux.HandleFunc("POST /api/chirps", apiCfg.HandlerCreateChirp)
 	//serveMux.HandleFunc("POST /admin/reset", apiCfg.HandlerDeleteAllUsers)
+	serveMux.HandleFunc("GET /api/chirps", apiCfg.HandlerGetAllChirps)
 	log.Fatal(serverStruct.ListenAndServe())
 }

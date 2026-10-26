@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"strings"
 )
 
@@ -11,7 +10,7 @@ func ProfaneReplacement(body string) string {
 	filter := []string{"kerfuffle", "sharbert", "fornax"}
 	for i, word := range words {
 		for _, comp := range filter {
-			log.Printf("\nWord: %s, Filter: %s\n", word, comp)
+			//log.Printf("\nWord: %s, Filter: %s\n", word, comp)
 			if strings.Compare(strings.ToLower(word), strings.ToLower(comp)) == 0 {
 				words[i] = "****"
 				continue

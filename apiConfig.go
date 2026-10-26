@@ -19,6 +19,14 @@ type User struct {
 	Email     string    `json:"email"`
 }
 
+type Chirp struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Body      string    `json:"body"`
+	UserID    uuid.UUID `json:"user_id"`
+}
+
 type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
@@ -115,13 +123,54 @@ func (cfg *apiConfig) HandlerCreateUser(w http.ResponseWriter, req *http.Request
 	RespondWithJSON(w, 201, finalUser)
 }
 
-func (cfg *apiConfig) HandlerDeleteAllUsers(w http.ResponseWriter, req *http.Request) {
-	platform := os.Getenv("PLATFORM")
-	if platform != "dev" {
-		RespondWithError(w, 403, "Forbidden")
+func (cfg *apiConfig) HandlerCreateChirp(w http.ResponseWriter, req *http.Request) {
+	type parameters struct {
+		Body string    `json: "body"`
+		ID   uuid.UUID `json:"user_id"`
 	}
-	err := cfg.db.ResetUsers(req.Context())
+
+	decoder := json.NewDecoder(req.Body)
+	params := parameters{}
+	err := decoder.Decode(&params)
 	if err != nil {
-		RespondWithError(w, 500, fmt.Sprintf("Error resetting users: %s", err))
+		RespondWithError(w, 500, fmt.Sprintf("Error decoding parameters: %s", err))
+		return
 	}
+	// Validation start
+	if len(params.Body) > 140 {
+		RespondWithError(w, 400, fmt.Sprintf("Chirp is too long"))
+		return
+	}
+
+	cleanedBody := ProfaneReplacement(params.Body)
+	type returnBody struct {
+		CleanedBody string `json:"cleaned_body"`
+	}
+	resp := returnBody{
+		CleanedBody: cleanedBody,
+	}
+	// Validation End
+
+	// Validated so create Chirp to add to database
+	chirpParams := database.CreateChirpParams{
+		UserID: params.ID,
+		Body:   resp.CleanedBody,
+	}
+
+	chirp, err := cfg.db.CreateChirp(req.Context(), chirpParams)
+	if err != nil {
+		RespondWithError(w, 500, fmt.Sprintf("Error creating chirp: %s", err))
+		return
+	}
+
+	//map to custom Chirp struct for JSON tags
+	var finalChirp Chirp
+	finalChirp = Chirp{
+		ID:        chirp.ID,
+		CreatedAt: chirp.CreatedAt,
+		UpdatedAt: chirp.UpdatedAt,
+		Body:      chirp.Body,
+		UserID:    chirp.UserID,
+	}
+	RespondWithJSON(w, 201, finalChirp)
 }

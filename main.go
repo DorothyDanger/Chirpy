@@ -36,8 +36,9 @@ func main() {
 	serveMux.HandleFunc("GET /api/healthz", handlerReadiness)
 	serveMux.HandleFunc("GET /admin/metrics", apiCfg.HandlerMetrics)
 	serveMux.HandleFunc("POST /admin/reset", apiCfg.HandlerReset)
-	serveMux.HandleFunc("POST /api/validate_chirp", apiCfg.HandlerValidate)
+	//serveMux.HandleFunc("POST /api/validate_chirp", apiCfg.HandlerValidate)
 	serveMux.HandleFunc("POST /api/users", apiCfg.HandlerCreateUser)
+	serveMux.HandleFunc("POST /api/chirps", apiCfg.HandlerCreateChirp)
 	//serveMux.HandleFunc("POST /admin/reset", apiCfg.HandlerDeleteAllUsers)
 	log.Fatal(serverStruct.ListenAndServe())
 }
